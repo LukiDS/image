@@ -1,0 +1,8 @@
+# Ignore IDE specific files
+.vscode/
+
+# Ignore Logs
+*.log
+
+# Ignore environment variables
+.env
