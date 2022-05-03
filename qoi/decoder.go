@@ -151,6 +151,10 @@ func (d *decoder) readBytes(data any) {
 	d.err = binary.Read(d.r, binary.BigEndian, data)
 }
 
+func writeBytes(w io.Writer, data any) error {
+	return binary.Write(w, binary.BigEndian, data)
+}
+
 func DecodeConfig(r io.Reader) (image.Config, error) {
 	d := decoder{
 		r: r,
