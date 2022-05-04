@@ -8,10 +8,7 @@ Be aware that this project is not optimized for speed or memory usage in any way
 
 The En-/Decoder DOES NOT load the complete image into memory. If speed is a concern, please save the image to a buffer before passing it to the En-/Decoder.
 
-Examples may be provided at a later time.
-
-Currently it only supports decoding qoi-files.
-It will support encoding as well at a later time.
+Examples and/or optimizations may be provided at a later time.
 
 ## More Infos
 
