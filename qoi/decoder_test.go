@@ -599,7 +599,6 @@ func assertEqualImage(t testing.TB, expected, actual image.Image, format string)
 		t.Fatalf(f)
 	}
 
-	//Todo: maybe change to convert colors instead of returning an error
 	if expected.ColorModel() != actual.ColorModel() {
 		f := fmt.Sprintf("%s", format) +
 			fmt.Sprintf("Assert image:\t different color model\n")
