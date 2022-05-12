@@ -69,63 +69,63 @@ func TestDecode(t *testing.T) {
 		{
 			name: "should return an error if width is zero",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 0, height: 1, channels: 4, colorspace: 0}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 0, height: 1, channels: 4, colorspace: 0}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if height is zero",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 0, channels: 3, colorspace: 1}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 0, channels: 3, colorspace: 1}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if channel is less than 3",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 0, colorspace: 1}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 0, colorspace: 1}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if channel is greater than 4",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 5, colorspace: 1}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 5, colorspace: 1}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if colorspace is greater than 1",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 2}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 2}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if reader does not start with qoiMagic",
 			args: struct{ r io.Reader }{
-				r: bytes.NewBuffer(nil),
+				r: generateEncodeStubWithoutHeader(t, []byte{'j', 'p', 'e', 'g', 0, 0, 0, 1, 0, 0, 0, 1, 4, 1}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if reader does not contain enough bytes specified with height and width",
 			args: struct{ r io.Reader }{
-				r: generateReaderStubWithoutPadding(t, qoiHeader{width: 1, height: 5, channels: 4, colorspace: 0}, []byte{opRGB, 255, 255, 255}),
+				r: generateEncodeStubWithoutPadding(t, qoiHeader{width: 1, height: 5, channels: 4, colorspace: 0}, []byte{opRGB, 255, 255, 255}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if reader does not contain qoiEndMarker",
 			args: struct{ r io.Reader }{
-				r: generateReaderStubWithoutPadding(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 255, 255, 255}),
+				r: generateEncodeStubWithoutPadding(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 255, 255, 255}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if reader does not end with valid qoiEndMarker",
 			args: struct{ r io.Reader }{
-				r: generateReaderStubWithoutPadding(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{
+				r: generateEncodeStubWithoutPadding(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{
 					/* OP        */ opRGB, 255, 255, 255,
 					/* EndMarker */ 0, 0, 0, 0, 0, 0, 0, 4,
 				}),
@@ -135,7 +135,7 @@ func TestDecode(t *testing.T) {
 		{
 			name: "should return an error if reader does not end with qoiEndMarker",
 			args: struct{ r io.Reader }{
-				r: generateReaderStubWithoutPadding(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{
+				r: generateEncodeStubWithoutPadding(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{
 					/* OP           */ opRGB, 255, 255, 255,
 					/* EndMarker    */ 0, 0, 0, 0, 0, 0, 0, 1,
 					/* TrailingByte */ 255,
@@ -171,49 +171,49 @@ func TestDecodeConfig(t *testing.T) {
 		{
 			name: "should return an error if width is zero",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 0, height: 1, channels: 4, colorspace: 0}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 0, height: 1, channels: 4, colorspace: 0}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if height is zero",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 0, channels: 3, colorspace: 1}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 0, channels: 3, colorspace: 1}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if channel is less than 3",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 0, colorspace: 1}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 0, colorspace: 1}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if channel is greater than 4",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 5, colorspace: 1}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 5, colorspace: 1}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if colorspace is greater than 1",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 2}, []byte{}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 2}, []byte{}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return an error if reader does not start with qoiMagic",
 			args: struct{ r io.Reader }{
-				r: bytes.NewBuffer(nil),
+				r: generateEncodeStubWithoutHeader(t, []byte{'j', 'p', 'e', 'g', 0, 0, 0, 1, 0, 0, 0, 1, 4, 1}),
 			},
 			expectError: true,
 		},
 		{
 			name: "should return decoded config",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 255, 255, 255}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 255, 255, 255}),
 			},
 			expectedConfig: image.Config{ColorModel: color.NRGBAModel, Width: 1, Height: 1},
 		},
@@ -254,14 +254,14 @@ func TestDecodeIndex(t *testing.T) {
 		{
 			name: "should return default pixel",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{(opINDEX | 10)}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{(opINDEX | 10)}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{0, 0, 0, 0}),
 		},
 		{
 			name: "should return pixel at index",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 1, 2, 3, 200, (opINDEX | hash(color.NRGBA{1, 2, 3, 200}))}),
+				r: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 1, 2, 3, 200, (opINDEX | hash(color.NRGBA{1, 2, 3, 200}))}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{1, 2, 3, 200, 1, 2, 3, 200}),
 		},
@@ -294,21 +294,21 @@ func TestDecodeRun(t *testing.T) {
 		{
 			name: "should return default pixels",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 3, height: 1, channels: 4, colorspace: 0}, []byte{opRUN | 2}),
+				r: generateEncodeStub(t, qoiHeader{width: 3, height: 1, channels: 4, colorspace: 0}, []byte{opRUN | 2}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 3, height: 1}, []byte{0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255}),
 		},
 		{
 			name: "should return at least one pixel",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRUN | 0}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRUN | 0}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{0, 0, 0, 255}),
 		},
 		{
 			name: "should return last pixel",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 4, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 1, 2, 3, opRUN | 2}),
+				r: generateEncodeStub(t, qoiHeader{width: 4, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 1, 2, 3, opRUN | 2}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 4, height: 1}, []byte{1, 2, 3, 255, 1, 2, 3, 255, 1, 2, 3, 255, 1, 2, 3, 255}),
 		},
@@ -341,14 +341,14 @@ func TestDecodeDiff(t *testing.T) {
 		{
 			name: "should return diff of default pixel",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opDIFF | 0}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opDIFF | 0}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{254, 254, 254, 255}),
 		},
 		{
 			name: "should return diff of last pixel",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 100, 200, 50, opDIFF | 0b00_10_11_00}),
+				r: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 100, 200, 50, opDIFF | 0b00_10_11_00}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{100, 200, 50, 255, 100, 201, 48, 255}),
 		},
@@ -381,14 +381,14 @@ func TestDecodeLuma(t *testing.T) {
 		{
 			name: "should return luma of default pixel",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opLUMA | 0, 0b0000_0000}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opLUMA | 0, 0b0000_0000}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{216, 224, 216, 255}),
 		},
 		{
 			name: "should return luma of last pixel",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 100, 200, 50, opLUMA | 0b00_100000, 0b1001_0101}),
+				r: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 100, 200, 50, opLUMA | 0b00_100000, 0b1001_0101}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{100, 200, 50, 255, 101, 200, 47, 255}),
 		},
@@ -421,14 +421,14 @@ func TestDecodeRGB(t *testing.T) {
 		{
 			name: "should return rgb",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 1, 2, 3}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 1, 2, 3}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{1, 2, 3, 255}),
 		},
 		{
 			name: "should return multiple rgb's",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 1, 2, 3, opRGB, 10, 20, 30}),
+				r: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 1, 2, 3, opRGB, 10, 20, 30}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{1, 2, 3, 255, 10, 20, 30, 255}),
 		},
@@ -461,14 +461,14 @@ func TestDecodeRGBA(t *testing.T) {
 		{
 			name: "should return rgba",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 1, 2, 3, 4}),
+				r: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 1, 2, 3, 4}),
 			},
 			expectedImage: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{1, 2, 3, 4}),
 		},
 		{
 			name: "should return multiple rgba's",
 			args: struct{ r io.Reader }{
-				r: generateReaderStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 1, 2, 3, 4, opRGBA, 10, 20, 30, 40}),
+				r: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 1, 2, 3, 4, opRGBA, 10, 20, 30, 40}),
 			},
 			expectError:   false,
 			expectedImage: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{1, 2, 3, 4, 10, 20, 30, 40}),
@@ -508,30 +508,6 @@ func getErrorFormatMsg(expected, actual bool, actualImage image.Image, actualErr
 		fmt.Sprintf("Actual error:\t %t\n", actual)
 }
 
-func generateHeader(t testing.TB, h qoiHeader) []byte {
-	t.Helper()
-
-	buf := bytes.NewBuffer(nil)
-
-	if err := writeBytes(buf, []byte(qoiMagic)); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeBytes(buf, h.width); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeBytes(buf, h.height); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeBytes(buf, h.channels); err != nil {
-		t.Fatal(err)
-	}
-	if err := writeBytes(buf, h.colorspace); err != nil {
-		t.Fatal(err)
-	}
-
-	return buf.Bytes()
-}
-
 func generateImageStub(t testing.TB, h qoiHeader, testdata []byte) image.Image {
 	t.Helper()
 
@@ -539,39 +515,6 @@ func generateImageStub(t testing.TB, h qoiHeader, testdata []byte) image.Image {
 	m.Pix = testdata
 
 	return m
-}
-
-func generateReaderStub(t testing.TB, h qoiHeader, testdata []byte) io.Reader {
-	t.Helper()
-	buf := bytes.NewBuffer(nil)
-
-	if err := writeBytes(buf, generateHeader(t, h)); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := writeBytes(buf, testdata); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := writeBytes(buf, qoiEndMarker); err != nil {
-		t.Fatal(err)
-	}
-
-	return buf
-}
-func generateReaderStubWithoutPadding(t testing.TB, h qoiHeader, testdata []byte) io.Reader {
-	t.Helper()
-	buf := bytes.NewBuffer(nil)
-
-	if err := writeBytes(buf, generateHeader(t, h)); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := writeBytes(buf, testdata); err != nil {
-		t.Fatal(err)
-	}
-
-	return buf
 }
 
 func assertEqualImage(t testing.TB, expected, actual image.Image, format string) {
@@ -629,13 +572,14 @@ func BenchmarkDecodeFromFile(b *testing.B) {
 		if err != nil {
 			b.Fatalf("could not decode file: %v\n", err)
 		}
+
 		b.StopTimer()
 		qoiFile.Seek(0, 0)
 		b.StartTimer()
 	}
 }
 
-func BenchmarkDecodeFromFileBuffered(b *testing.B) {
+func BenchmarkDecodeFromBufferedFile(b *testing.B) {
 	qoiFile, err := os.Open("../testdata/dice.qoi")
 	if err != nil {
 		b.Fatalf("could not read file: %v\n", err)
@@ -649,7 +593,9 @@ func BenchmarkDecodeFromFileBuffered(b *testing.B) {
 		if err != nil {
 			b.Fatalf("could not decode file: %v\n", err)
 		}
+
 		b.StopTimer()
+		buf.Reset(qoiFile)
 		qoiFile.Seek(0, 0)
 		b.StartTimer()
 	}
@@ -666,6 +612,7 @@ func BenchmarkDecodeFromMemory(b *testing.B) {
 		b.StopTimer()
 		buf := bytes.NewBuffer(qoiData)
 		b.StartTimer()
+
 		_, err := Decode(buf)
 		if err != nil {
 			b.Fatalf("could not decode file: %v\n", err)

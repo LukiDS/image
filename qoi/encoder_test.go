@@ -128,7 +128,7 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{10, 20, 30, 255, 0, 0, 0, 0}),
 			},
-			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30, opINDEX | hash(color.NRGBA{0, 0, 0, 0})}),
+			expectedData: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30, opINDEX | hash(color.NRGBA{0, 0, 0, 0})}).Bytes(),
 		},
 		{
 			name: "should return encoded run",
@@ -139,7 +139,7 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{0, 0, 0, 0, 0, 0, 0, 0}),
 			},
-			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opINDEX | hash(color.NRGBA{0, 0, 0, 0}), opRUN | 0}),
+			expectedData: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opINDEX | hash(color.NRGBA{0, 0, 0, 0}), opRUN | 0}).Bytes(),
 		},
 		{
 			name: "should return encoded diff",
@@ -150,7 +150,7 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{9, 1, 255, 255, 10, 255, 0, 255}),
 			},
-			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 9, 1, 255, opDIFF | (3 << 4) | (0 << 2) | (3 << 0)}),
+			expectedData: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 9, 1, 255, opDIFF | (3 << 4) | (0 << 2) | (3 << 0)}).Bytes(),
 		},
 		{
 			name: "should return encoded luma",
@@ -161,7 +161,7 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{127, 30, 0, 200, 100, 0, 225, 200}),
 			},
-			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 127, 30, 0, 200, opLUMA | 2, (11 << 4) | (7 << 0)}),
+			expectedData: generateEncodeStub(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 127, 30, 0, 200, opLUMA | 2, (11 << 4) | (7 << 0)}).Bytes(),
 		},
 		{
 			name: "should return encoded rgb",
@@ -172,7 +172,7 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{10, 20, 30, 255}),
 			},
-			expectedData: generateEncodeDummy(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30}),
+			expectedData: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30}).Bytes(),
 		},
 		{
 			name: "should return encoded rgba",
@@ -183,7 +183,7 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{10, 20, 30, 100}),
 			},
-			expectedData: generateEncodeDummy(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 10, 20, 30, 100}),
+			expectedData: generateEncodeStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 10, 20, 30, 100}).Bytes(),
 		},
 	}
 
@@ -213,7 +213,7 @@ func TestEncode(t *testing.T) {
 	}
 }
 
-func generateEncodeDummy(t testing.TB, h qoiHeader, data []byte) []byte {
+func generateEncodeStub(t testing.TB, h qoiHeader, data []byte) *bytes.Buffer {
 	t.Helper()
 
 	header := make([]byte, 0, qoiHeaderSize)
@@ -237,7 +237,46 @@ func generateEncodeDummy(t testing.TB, h qoiHeader, data []byte) []byte {
 		t.Fatal(err)
 	}
 
-	return buf.Bytes()
+	return buf
+}
+
+func generateEncodeStubWithoutPadding(t testing.TB, h qoiHeader, data []byte) *bytes.Buffer {
+	t.Helper()
+
+	header := make([]byte, 0, qoiHeaderSize)
+	header = append(header, qoiMagic...)
+	header = append(header, byte(h.width>>24), byte(h.width>>16), byte(h.width>>8), byte(h.width))
+	header = append(header, byte(h.height>>24), byte(h.height>>16), byte(h.height>>8), byte(h.height))
+	header = append(header, h.channels, h.colorspace)
+
+	if len(header) != qoiHeaderSize {
+		t.Fatalf("invalid header size")
+	}
+
+	buf := bytes.NewBuffer(header)
+	_, err := buf.Write(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return buf
+}
+
+func generateEncodeStubWithoutHeader(t testing.TB, data []byte) *bytes.Buffer {
+	t.Helper()
+
+	buf := bytes.NewBuffer(nil)
+	_, err := buf.Write(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = buf.Write(qoiEndMarker)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return buf
 }
 
 func BenchmarkEncodeToFile(b *testing.B) {

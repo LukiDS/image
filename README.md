@@ -4,7 +4,7 @@
 
 This is one of the golang versions of a En-/Decoder for the QOI - Format.
 
-Be aware that this project is not really optimized for speed or memory usage in any way, but it gets the job done.
+Be aware that this project is not really optimized for speed or memory usage.
 
 If speed is a concern, please save the image-file to a buffer before passing it to the En-/Decoder.
 
