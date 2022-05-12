@@ -12,8 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/LukiDS/image/imgconv"
 )
 
 func TestEncodeWithTestFiles(t *testing.T) {
@@ -24,7 +22,7 @@ func TestEncodeWithTestFiles(t *testing.T) {
 
 	for _, name := range filenames {
 		t.Run(filepath.Base(name), func(t *testing.T) {
-			ref, err := os.ReadFile(name)
+			reference, err := os.ReadFile(name)
 			if err != nil {
 				t.Fatalf("could not read file: %v\n", err)
 			}
@@ -40,27 +38,49 @@ func TestEncodeWithTestFiles(t *testing.T) {
 				t.Fatalf("could not decode file: %v\n", err)
 			}
 
-			//qoi en-/decoder always returns an NRGBA image
-			if img.ColorModel() != color.NRGBAModel {
-				img = imgconv.ToNRGBA(img)
-			}
-
 			encoded := bytes.NewBuffer(nil)
 			err = Encode(encoded, img)
 			if err != nil {
-				t.Fatalf("could not encode file: %v\n", err)
+				format := fmt.Sprintf("\n") +
+					fmt.Sprintf("File:\t %s\n", name) +
+					fmt.Sprintf("Expected error:\t %v\n", nil) +
+					fmt.Sprintf("Actual error:\t %v\n", err)
+
+				t.Fatalf(format)
 			}
 
-			for idx, val := range ref {
+			if len(reference) != len(encoded.Bytes()) {
+				format := fmt.Sprintf("\n") +
+					fmt.Sprintf("File:\t %s\n", name) +
+					fmt.Sprintf("Expected length:\t %d\n", len(encoded.Bytes())) +
+					fmt.Sprintf("Actual length:\t %d\n", len(reference))
+
+				t.Fatalf(format)
+			}
+
+			for idx, val := range reference {
 				if val != encoded.Bytes()[idx] {
 					if idx == 12 || idx == 13 {
-						t.Log("Warning: Skipped different channel/colorspace value")
-						//Skip channel and/or colorspace values
+						if idx == 12 {
+							t.Log("Warning: Skipped different channel value")
+						}
+						if idx == 13 {
+							t.Log("Warning: Skipped different colorspace value")
+						}
+
+						//Skip channel and colorspace values
 						//because Encode uses default values for both
 						//and does not check for user input
 						continue
 					}
-					t.Fatalf("\nFile:\t %s not equal encodings\nencoded: %d - %.8b\nreference: %d - %.8b\nidx: %d\n", name, len(encoded.Bytes()), encoded.Bytes()[idx], len(ref), val, idx)
+
+					format := fmt.Sprintf("\n") +
+						fmt.Sprintf("File:\t %s\n", name) +
+						fmt.Sprintf("Index:\t %d\n", idx) +
+						fmt.Sprintf("Expected value:\t %.8b\n", encoded.Bytes()[idx]) +
+						fmt.Sprintf("Actual value:\t %.8b\n", reference[idx])
+
+					t.Fatalf(format)
 				}
 			}
 		})
@@ -77,17 +97,6 @@ func TestEncode(t *testing.T) {
 		expectError  bool
 		expectedData []byte
 	}{
-		{
-			name: "should return an error if image is not in NRGBA format",
-			args: struct {
-				w io.Writer
-				m image.Image
-			}{
-				w: io.Discard,
-				m: image.NewRGBA(image.Rect(0, 0, 1, 1)),
-			},
-			expectError: true,
-		},
 		{
 			name: "should return an error if width is zero",
 			args: struct {
@@ -111,18 +120,7 @@ func TestEncode(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name: "should return encoded header",
-			args: struct {
-				w io.Writer
-				m image.Image
-			}{
-				w: bytes.NewBuffer(nil),
-				m: generateImageStub(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{1, 2, 3, 4}),
-			},
-			expectedData: getEncodedHeader(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 1, 2, 3, 4}),
-		},
-		{
-			name: "should return index",
+			name: "should return encoded index",
 			args: struct {
 				w io.Writer
 				m image.Image
@@ -130,10 +128,10 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{10, 20, 30, 255, 0, 0, 0, 0}),
 			},
-			expectedData: getEncodedHeader(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30, opINDEX | hash(color.NRGBA{0, 0, 0, 0})}),
+			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30, opINDEX | hash(color.NRGBA{0, 0, 0, 0})}),
 		},
 		{
-			name: "should return run",
+			name: "should return encoded run",
 			args: struct {
 				w io.Writer
 				m image.Image
@@ -141,10 +139,10 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{0, 0, 0, 0, 0, 0, 0, 0}),
 			},
-			expectedData: getEncodedHeader(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opINDEX | hash(color.NRGBA{0, 0, 0, 0}), opRUN | 0}),
+			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opINDEX | hash(color.NRGBA{0, 0, 0, 0}), opRUN | 0}),
 		},
 		{
-			name: "should return diff",
+			name: "should return encoded diff",
 			args: struct {
 				w io.Writer
 				m image.Image
@@ -152,10 +150,10 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{9, 1, 255, 255, 10, 255, 0, 255}),
 			},
-			expectedData: getEncodedHeader(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 9, 1, 255, opDIFF | (3 << 4) | (0 << 2) | (3 << 0)}),
+			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 9, 1, 255, opDIFF | (3 << 4) | (0 << 2) | (3 << 0)}),
 		},
 		{
-			name: "should return luma",
+			name: "should return encoded luma",
 			args: struct {
 				w io.Writer
 				m image.Image
@@ -163,10 +161,10 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 2, height: 1}, []byte{127, 30, 0, 200, 100, 0, 225, 200}),
 			},
-			expectedData: getEncodedHeader(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 127, 30, 0, 200, opLUMA | 2, (11 << 4) | (7 << 0)}),
+			expectedData: generateEncodeDummy(t, qoiHeader{width: 2, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 127, 30, 0, 200, opLUMA | 2, (11 << 4) | (7 << 0)}),
 		},
 		{
-			name: "should return rgb",
+			name: "should return encoded rgb",
 			args: struct {
 				w io.Writer
 				m image.Image
@@ -174,10 +172,10 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{10, 20, 30, 255}),
 			},
-			expectedData: getEncodedHeader(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30}),
+			expectedData: generateEncodeDummy(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGB, 10, 20, 30}),
 		},
 		{
-			name: "should return rgba",
+			name: "should return encoded rgba",
 			args: struct {
 				w io.Writer
 				m image.Image
@@ -185,7 +183,7 @@ func TestEncode(t *testing.T) {
 				w: bytes.NewBuffer(nil),
 				m: generateImageStub(t, qoiHeader{width: 1, height: 1}, []byte{10, 20, 30, 100}),
 			},
-			expectedData: getEncodedHeader(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 10, 20, 30, 100}),
+			expectedData: generateEncodeDummy(t, qoiHeader{width: 1, height: 1, channels: 4, colorspace: 0}, []byte{opRGBA, 10, 20, 30, 100}),
 		},
 	}
 
@@ -215,41 +213,26 @@ func TestEncode(t *testing.T) {
 	}
 }
 
-func getEncodedHeader(t testing.TB, h qoiHeader, data []byte) []byte {
+func generateEncodeDummy(t testing.TB, h qoiHeader, data []byte) []byte {
 	t.Helper()
 
-	buf := bytes.NewBuffer(nil)
-	err := writeBytes(buf, []byte(qoiMagic))
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = writeBytes(buf, h.width)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = writeBytes(buf, h.height)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = writeBytes(buf, h.channels)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = writeBytes(buf, h.colorspace)
-	if err != nil {
-		t.Fatal(err)
-	}
+	header := make([]byte, 0, qoiHeaderSize)
+	header = append(header, qoiMagic...)
+	header = append(header, byte(h.width>>24), byte(h.width>>16), byte(h.width>>8), byte(h.width))
+	header = append(header, byte(h.height>>24), byte(h.height>>16), byte(h.height>>8), byte(h.height))
+	header = append(header, h.channels, h.colorspace)
 
-	if len(buf.Bytes()) != qoiHeaderSize {
+	if len(header) != qoiHeaderSize {
 		t.Fatalf("invalid header size")
 	}
 
-	_, err = buf.Write(data)
+	buf := bytes.NewBuffer(header)
+	_, err := buf.Write(data)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = writeBytes(buf, qoiEndMarker)
+	_, err = buf.Write(qoiEndMarker)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +240,7 @@ func getEncodedHeader(t testing.TB, h qoiHeader, data []byte) []byte {
 	return buf.Bytes()
 }
 
-func BenchmarkEncodeFromFile(b *testing.B) {
+func BenchmarkEncodeToFile(b *testing.B) {
 	pngFile, err := os.Open("../testdata/dice.png")
 	if err != nil {
 		b.Fatalf("could not read file: %v\n", err)
@@ -269,26 +252,27 @@ func BenchmarkEncodeFromFile(b *testing.B) {
 		b.Fatalf("could not decode file: %v\n", err)
 	}
 
-	img = imgconv.ToNRGBA(img)
 	dir := b.TempDir()
 	qoiFile, err := os.Create(dir + "test.qoi")
 	if err != nil {
 		b.Fatalf("could not create file: %v\n", err)
 	}
 	defer qoiFile.Close()
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := Encode(qoiFile, img)
 		if err != nil {
 			b.Fatalf("could not encode file: %v\n", err)
 		}
+
 		b.StopTimer()
 		qoiFile.Seek(0, 0)
 		b.StartTimer()
 	}
 }
 
-func BenchmarkEncodeFromFileBuffered(b *testing.B) {
+func BenchmarkEncodeToBufferedFile(b *testing.B) {
 	pngFile, err := os.Open("../testdata/dice.png")
 	if err != nil {
 		b.Fatalf("could not read file: %v\n", err)
@@ -300,26 +284,29 @@ func BenchmarkEncodeFromFileBuffered(b *testing.B) {
 		b.Fatalf("could not decode file: %v\n", err)
 	}
 
-	img = imgconv.ToNRGBA(img)
 	dir := b.TempDir()
 	qoiFile, err := os.Create(dir + "test.qoi")
 	if err != nil {
 		b.Fatalf("could not create file: %v\n", err)
 	}
 	defer qoiFile.Close()
+
+	buf := bufio.NewWriter(qoiFile)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		err := Encode(bufio.NewWriter(qoiFile), img)
+		err := Encode(buf, img)
 		if err != nil {
 			b.Fatalf("could not encode file: %v\n", err)
 		}
+
 		b.StopTimer()
+		buf.Reset(qoiFile)
 		qoiFile.Seek(0, 0)
 		b.StartTimer()
 	}
 }
 
-func BenchmarkEncodeFromMemory(b *testing.B) {
+func BenchmarkEncodeToMemory(b *testing.B) {
 	pngFile, err := os.Open("../testdata/dice.png")
 	if err != nil {
 		b.Fatalf("could not read file: %v\n", err)
@@ -331,16 +318,16 @@ func BenchmarkEncodeFromMemory(b *testing.B) {
 		b.Fatalf("could not decode file: %v\n", err)
 	}
 
-	img = imgconv.ToNRGBA(img)
-	b.ResetTimer()
 	buf := bytes.NewBuffer(nil)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := Encode(buf, img)
 		if err != nil {
 			b.Fatalf("could not encode file: %v\n", err)
 		}
+
 		b.StopTimer()
-		buf = bytes.NewBuffer(nil)
+		buf.Reset()
 		b.StartTimer()
 	}
 }
